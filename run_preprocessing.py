@@ -11,29 +11,14 @@ from kgcn.preprocessing import (
 )
 from kgcn.util import get_json_formatter
 
+import argparse
+
+
+
 # logger in absl-py cause log duplicates when use module logger like
 # getLogger(__name__), so I use absl loggin here
 logging._absl_handler.setFormatter(get_json_formatter())
 logger = logging._absl_logger
-
-
-flags.DEFINE_string(
-    'item_id_to_entity_file', 'item_index2entity_id.txt',
-    'The dictionary file from original item id to knowlege graph entity id')
-flags.DEFINE_string('kg_file', 'kg.txt', 'The knowlege graph file')
-flags.DEFINE_string('rating_file', 'ratings.csv', 'User item interaction file')
-flags.DEFINE_integer(
-    'neighbor_sample_size', 4, 'The number of neighbors to be sampled')
-flags.DEFINE_integer('batch_size', 65536, 'Batch size')
-flags.DEFINE_string(
-    'output_data_dir', 'output_data',
-    'Path to root directory of to be wrote preprocessed data')
-flags.DEFINE_bool(
-    'use_tfrecord', False,
-    'If ture, preprocessed data be wrote as tfrecord. '
-    'If false, be wrote as numpy binary format.')
-
-FLAGS = flags.FLAGS
 
 
 def process_data(
@@ -103,15 +88,46 @@ def process_data(
             np.save(file_name, data)
 
 
-def main(_) -> None:
-    process_data(
-        item_id_to_entity_path=FLAGS.item_id_to_entity_file,
-        kg_path=FLAGS.kg_file,
-        rating_path=FLAGS.rating_file,
-        neighbor_sample_size=FLAGS.neighbor_sample_size,
-        output_dir=FLAGS.output_data_dir,
-        user_tfrecord=FLAGS.use_tfrecord)
+def main(args):
+    return  process_data(
+            item_id_to_entity_path=args.item_id_to_entity_file,
+            kg_path=args.kg_file,
+            rating_path=args.rating_file,
+            neighbor_sample_size=args.neighbor_sample_size,
+            output_dir=args.output_data_dir,
+            user_tfrecord=args.use_tfrecord)
 
 
 if __name__ == "__main__":
-    app.run(main)
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--item_id_to_entity_path",
+                        type=str,
+                        default="./data/movie/item_index2entity_id.txt",
+                        help="The dictionary file from original item id to knowledge graph entity id")
+    parser.add_argument("--kg_file",
+                        type=str,
+                        default="./data/movie/kg.txt",
+                        help="The knowlege graph file")
+    parser.add_argument("--rating_file",
+                        type=str,
+                        default="./data/movie/ratings.csv",
+                        help="User item interaction file")
+    parser.add_argument('--neighbor_sample_size',
+                        type=int,
+                        default=8,
+                        help='the number of neighbors to be sampled')
+    parser.add_argument('--batch_size',
+                        type=int,
+                        default=32,
+                        help='batch size')
+    parser.add_argument('--output_data_dir',
+                        type=str,
+                        default="./data/movie/",
+                        help='Path to root directory of to be wrote preprocessed data')
+    parser.add_argument("--use_tfrecord",
+                        action="store_true",
+                        help="If ture, preprocessed data be wrote as tfrecord. Else, go numpy binary format")
+
+    args = parser.parse_args()
+    main(args)
